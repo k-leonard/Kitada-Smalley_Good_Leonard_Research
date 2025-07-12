@@ -1,0 +1,170 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-06-07"
+---
+
+```{r}
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+articles <- read_csv("/Users/tatumgood/Desktop/StatNugget Data - NYT - Article_Data.csv")
+graphics <- read_csv("/Users/tatumgood/Desktop/StatNugget Data - NYT - Graphic_Data.csv")
+```
+```{r}
+#join the data
+full_data <- left_join(graphics, articles, by = "Art_ID")
+view(full_data)
+```
+
+```{r}
+full_data <- full_data %>%
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+
+head(full_data)
+
+```
+
+```{r}
+full_data2 <- full_data %>%
+  mutate(
+    Covid_Period = if_else(Date < as.Date("03/11/2020", format = "%m/%d/%Y"), 
+                           "Pre-COVID", 
+                           "Post-COVID")
+  )
+head(full_data2)
+```
+
+```{r}
+graph_type_freq <- full_data2 %>%
+  group_by(Covid_Period, Graph_Type) %>%
+  summarise(Count = n()) %>%
+  ungroup()
+
+ggplot(graph_type_freq, aes(x = Graph_Type, y = Count, fill = Covid_Period)) +
+  geom_col(position = "dodge") +
+  labs(title = "Graph Type Usage: Pre vs Post COVID", x = "Graph Type", y = "Count") +
+  theme_minimal()
+
+```
+
+```{r}
+full_data2 <- full_data2 %>%
+  mutate(Graph_Type_Label = case_when(
+    Graph_Type == 1  ~ "Box-plot",
+    Graph_Type == 2  ~ "Histogram/Density",
+    Graph_Type == 3  ~ "Bar",
+    Graph_Type == 4  ~ "Time Series/Line",
+    Graph_Type == 5  ~ "Geographical Map",
+    Graph_Type == 6  ~ "Bubble/Dot",
+    Graph_Type == 7  ~ "Scatterplot",
+    Graph_Type == 8  ~ "Treemap",
+    Graph_Type == 9  ~ "Area Chart",
+    Graph_Type == 10 ~ "Barbell",
+    Graph_Type == 11 ~ "Flow Map/Chart",
+    Graph_Type == 12 ~ "Donut/Pie Chart",
+    Graph_Type == 13 ~ "Tile",
+    Graph_Type == 14 ~ "Pictorial/Other",
+    Graph_Type == 15 ~ "Table",
+    TRUE ~ "Other"
+  ))
+
+```
+
+```{r}
+graph_type_freq <- full_data2 %>%
+  group_by(Covid_Period, Graph_Type_Label) %>%
+  summarise(Count = n(), .groups = "drop")
+
+ggplot(graph_type_freq, aes(x = fct_reorder(Graph_Type_Label, Count), y = Count, fill = Covid_Period)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Graph Type Usage: Pre vs Post COVID",
+    x = "Graph Type",
+    y = "Count"
+  ) +
+  coord_flip() +  # Optional: flip axes for readability
+  theme_minimal()
+
+```
+
+
+```{r}
+design_features <- full_data2 %>%
+  group_by(Covid_Period) %>%
+  summarise(
+    Color_Used = mean(Color_Fill, na.rm = TRUE),
+    Size_Used = mean(Size, na.rm = TRUE),
+    Motion_Used = mean(Motion, na.rm = TRUE),
+    Interactive_Used = mean(Interactive, na.rm = TRUE)
+  )
+
+print(design_features)
+
+```
+
+```{r}
+gestalt_principles <- full_data2 %>%
+  group_by(Covid_Period) %>%
+  summarise(
+    Similarity = mean(G_similarity, na.rm = TRUE),
+    Proximity = mean(G_proximity, na.rm = TRUE),
+    Continuity = mean(G_continuity, na.rm = TRUE)
+  )
+
+print(gestalt_principles)
+
+```
+
+```{r}
+task_complexity <- full_data2 %>%
+  group_by(Covid_Period) %>%
+  summarise(Average_Perception_Tasks = mean(Perc_Num, na.rm = TRUE))
+
+print(task_complexity)
+
+```
+
+```{r}
+interactivity_trend <- full_data2 %>%
+  mutate(Year = year(Date)) %>%
+  group_by(Year) %>%
+  summarise(Avg_Interactive = mean(Interactive, na.rm = TRUE)) %>%
+  filter(!is.na(Year))
+
+ggplot(interactivity_trend, aes(x = Year, y = Avg_Interactive)) +
+  geom_line(size = 1.2, color = "#1f78b4") +
+  labs(title = "Trend in Interactive Features Over Time", y = "Average Use of Interactivity") +
+  theme_minimal()
+
+```
+
+
+```{r}
+# Filter for Health Science articles
+health_graphics <- full_data2 %>%
+  filter(Main_Topic == "Health")
+
+# Compare interactivity in health-related articles, pre vs post
+health_interactive <- health_graphics %>%
+  group_by(Covid_Period) %>%
+  summarise(Avg_Interactive = mean(Interactive, na.rm = TRUE))
+
+print(health_interactive)
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
